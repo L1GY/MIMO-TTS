@@ -1,0 +1,22 @@
+# MiMo Voice Studio 依赖清单
+# 安装：pip install -r requirements.txt
+
+# Web 框架与服务器
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<1.0
+python-multipart>=0.0.9          # ASR 音频上传（multipart/form-data）必需
+
+# 配置与校验
+pydantic>=2.6,<3.0
+pydantic-settings>=2.2,<3.0
+
+# 数据库
+SQLAlchemy>=2.0,<3.0
+
+# 鉴权
+PyJWT>=2.8,<3.0                  # JWT 签发/校验（纯 Python，Windows 无编译依赖）
+
+# 上游 MiMo API 调用
+httpx>=0.27,<1.0                 # 异步 HTTP 客户端
+
+# 开发期可选：.env 自动加载已由 pydantic-settings 提供，无需 python-dotenv

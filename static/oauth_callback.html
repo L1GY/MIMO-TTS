@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>微信登录 · 声坊</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body style="display:grid;place-items:center;min-height:100vh;padding:24px">
+  <div class="card" style="max-width:380px;text-align:center">
+    <div id="slot"><span class="spinner dark" style="display:inline-block"></span></div>
+    <p id="msg" style="margin-top:12px;font-size:14px;color:var(--muted)">正在完成微信登录…</p>
+  </div>
+
+<script src="/static/js/api.js"></script>
+<script>
+(function () {
+  var p = new URLSearchParams(location.search);
+  var token = p.get('token');
+  var error = p.get('error');
+  var msg = document.getElementById('msg');
+
+  if (token) {
+    Api.setSession(token, {});
+    msg.textContent = '登录成功，正在进入工作台…';
+    setTimeout(function () {
+      try { if (window.opener) window.opener.location.href = '/static/app.html'; } catch (e) {}
+      window.close();
+      location.href = '/static/app.html';
+    }, 500);
+  } else {
+    var text = {
+      wechat_cancelled: '你取消了微信授权',
+      wechat_state_invalid: '登录请求已过期，请重新发起'
+    }[error] || '微信登录未完成';
+    msg.textContent = text + '，正在返回登录页…';
+    setTimeout(function () { location.href = '/static/index.html'; }, 1400);
+  }
+})();
+</script>
+</body>
+</html>
