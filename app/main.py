@@ -80,6 +80,11 @@ def create_app() -> FastAPI:
     async def favicon():
         return FileResponse(STATIC_DIR / "favicon.svg")
 
+    @app.get("/__tcb_probe__")
+    def tcb_probe():
+        return {"status": "ok"}
+
+
     return app
 
 
