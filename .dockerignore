@@ -1,0 +1,8 @@
+.venv
+.git
+.vscode
+.workbuddy
+__pycache__
+*.pyc
+.env
+smoke_test.py
