@@ -36,7 +36,7 @@ def main() -> None:
     uvicorn.run(
         "app.main:app",
         host=args.host or settings.host,
-        port=args.port or settings.port,
+        port="0.0.0.0",
         reload=args.reload,
         log_level="info",
     )
