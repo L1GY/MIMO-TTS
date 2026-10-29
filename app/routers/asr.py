@@ -45,15 +45,35 @@ def _sniff_format(filename: str, content_type: str | None) -> str:
     raise AppError("仅支持 wav 或 mp3 格式的音频文件", code="unsupported_audio_format")
 
 
+def _to_bool(v: str | None, default: bool = False) -> bool:
+    """multipart 的 form 字段都是字符串，这里统一转成布尔。"""
+    if v is None:
+        return default
+    return str(v).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _split_segments(text: str) -> list[str]:
+    """把识别结果按句切分成段落（上游不提供分段参数，由服务端后处理实现）。"""
+    import re
+
+    parts = re.split(r"(?<=[。！？!?；;])", text)
+    return [p.strip() for p in parts if p and p.strip()]
+
+
 @router.post("/transcribe", summary="上传音频转文字")
 async def transcribe(
     file: UploadFile = File(..., description="wav / mp3 音频文件"),
     language: str = Form(default="auto"),
+    punctuate: str = Form(default="true"),
+    segment: str = Form(default="false"),
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if language not in {"auto", "zh", "en"}:
         raise AppError("language 仅支持 auto / zh / en", code="invalid_language")
+
+    want_punctuate = _to_bool(punctuate, True)
+    want_segment = _to_bool(segment, False)
 
     fmt = _sniff_format(file.filename or "", file.content_type)
     mime = ASR_INPUT_FORMATS[fmt]
@@ -77,6 +97,8 @@ async def transcribe(
         user_id=current.id,
         model=settings.asr_model,
         language=language,
+        punctuate=want_punctuate,
+        segment=want_segment,
         filename=file.filename,
         file_size=len(data),
         file_mime=mime,
@@ -91,8 +113,17 @@ async def transcribe(
         usage = result["usage"] or {}
         latency = int((time.perf_counter() - started) * 1000)
 
+        transcript = result["transcript"]
+        if not want_punctuate:
+            # 上游本身就会输出标点，关闭时由这里去掉（含中英文标点）
+            import re
+
+            transcript = re.sub(r"[，。！？；：、,.!?;:]", "", transcript).strip()
+
+        segments = _split_segments(transcript) if want_segment else None
+
         record.status = "success"
-        record.transcript = result["transcript"]
+        record.transcript = transcript
         record.stored_path = stored_path
         record.audio_seconds = result["seconds"]
         record.prompt_tokens = usage.get("prompt_tokens")
@@ -105,7 +136,8 @@ async def transcribe(
 
         return {
             "id": record.id,
-            "transcript": result["transcript"],
+            "transcript": transcript,
+            "segments": segments,
             "model": result["model"],
             "language": language,
             "audio_seconds": result["seconds"],

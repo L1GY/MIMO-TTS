@@ -1,14 +1,15 @@
-# 声坊 Voice Atelier
+# VoiceLab 语音工具箱
 
-文本转语音、音色设计与语音识别工作台。
-后端 Python + FastAPI，前端原生 HTML/CSS/JS，数据落 SQLite，含完整的注册登录与鉴权。
+在线 **语音转文字（ASR）+ 文字转语音（TTS）** 一体化工具站。
+单页纵向布局，所有核心功能在首页完成；后端 Python + FastAPI，数据落 SQLite，含账号体系与历史存储。
 
-- **文本转语音**：预置音色或自定义音色，生成后可试听、下载、删除
-- **音色设计**：用一句话描述声音，试听满意后保存成自己的音色，随时复用
-- **音频转文字**：上传 wav / mp3，返回带标点的文本，源音频归档
-- **我的记录**：生成记录与已设计音色分栏管理，支持试听、导出、删除与分页加载
-- **鉴权**：用户名密码注册登录（PBKDF2 + JWT），未登录无法调用任何业务接口
-- 微信扫码登录：可选，未配置时自动关闭，不影响账号密码登录
+- **TTS 文字转语音**：音色、语速、音调、采样率可调，生成后可试听、下载、留档
+- **ASR 语音转文字**：麦克风录音或上传音频，自动标点、可选分段，支持导出
+- **历史记录**：合成与识别任务全部留档，可回放、导出、删除、分页加载
+- **明暗主题**：默认浅色（#F8FAFC 底 / 白卡片 / #333 正文），一键切换深色并记忆选择
+- 登录：账号密码注册登录（PBKDF2 + JWT），未登录时以页内遮罩引导，不跳页面
+
+界面主色 `#165DFF` 深蓝，辅助色 `#00B4D8` 淡青（用于波形与选中态）。
 
 ---
 
@@ -24,9 +25,7 @@ cp .env.example .env            # 已存在可跳过
 python run.py                   # http://127.0.0.1:8000
 ```
 
-打开 <http://127.0.0.1:8000> 注册账号后即可使用。接口文档：<http://127.0.0.1:8000/docs>
-
-自检：`python smoke_test.py`（需先启动服务）。
+打开 <http://127.0.0.1:8000> 即可使用。接口文档：<http://127.0.0.1:8000/docs>
 
 ## 2. 密钥与配置
 
@@ -38,84 +37,63 @@ SPEECH_API_BASE_URL=https://api.xiaomimimo.com/v1
 MOCK_MODE=false
 ```
 
-调用链：浏览器 → 本后端（读取 `.env` 中的密钥）→ 上游语音服务。
-浏览器永远不接触密钥：`/api/meta`、`/api/tts/options` 等接口只下发能力与开关，
-任何响应都不含密钥字段（冒烟测试中有断言覆盖）。
-
 `.env` 已在 `.gitignore` 中；生产环境建议改用系统环境变量注入。
 
 上游协议要求的模型 ID、预置音色 ID 同样外置在 `.env`
 （`TTS_MODEL` / `TTS_MODEL_DESIGN` / `TTS_MODEL_CLONE` / `ASR_MODEL` / `TTS_DEFAULT_VOICE` / `TTS_PRESET_VOICES`），
-**源码与前端中不含任何上游品牌字面量**，前端所需模型由 `/api/tts/options` 动态下发。
+前端所需模型由 `/api/tts/options` 动态下发，源码中不出现上游品牌字面量。
 
 > ⚠️ 若密钥曾在聊天、截图或日志中暴露，请立即到控制台轮换并替换 `.env` 中的值。
 
-## 3. 目录结构
+## 3. 页面结构（单页，从上到下）
+
+| 区块 | 内容 |
+| --- | --- |
+| 顶栏 | Logo + 名称 + 副标题；导航 首页 / API 文档 / 关于；右侧 主题切换 + 登录或账号 |
+| 首屏 | 大标题、副标题、说明，下方两张模式卡（TTS / ASR），点选切换工作面板 |
+| 工作台 | 左栏输入区（随模式切换）｜右栏结果预览（只读文本 + 波形 + 播放器 + 下载/复制） |
+| 功能特性 | 三列卡片：TTS 文字合成 / ASR 语音识别 / 历史与导出 |
+| API 文档 | 主要接口一览 |
+| 历史记录 | 全部 / 合成 / 识别 分栏，播放、下载、载入文本、删除、加载更多 |
+| 页脚 | 版权 / 技术说明 / 隐私与条款 |
+
+## 4. 关于语速 / 音调 / 采样率
+
+**上游接口并不开放这三个参数**，因此它们在服务端通过后处理实现（`app/services/audio_dsp.py`）：
+
+1. 变调：按 `k = 2^(半音/12)` 重采样
+2. 变速：OLA（Overlap-Add）时间拉伸，因子 `k / speed`，保证只改时长不改音高
+3. 采样率：线性插值重采样，时长与音高均不变
+
+全部为纯 Python 实现，不引入第三方依赖；任一步异常都会**静默回退到原始音频**，
+绝不影响合成主流程。默认参数（1.0 / 0 / 跟随上游）不触发任何处理，避免无谓的音质损失。
+
+ASR 侧同理：`punctuate` 关闭时由服务端去掉标点，`segment` 开启时按句切分成段落返回。
+
+## 5. 目录结构
 
 ```
 Mimo_TTS/
-├── .env / .env.example          # 配置与密钥（.env 不入库）
+├── .env / .env.example
 ├── requirements.txt
-├── run.py                       # 启动入口
-├── smoke_test.py                # 端到端自检
+├── run.py
 ├── README.md
-│
 ├── app/
-│   ├── main.py                  # 应用装配、静态站点、全局异常处理
-│   ├── config.py                # 配置中心 + 音色/格式常量
-│   ├── db.py                    # 引擎、会话、缺列自动补齐
-│   ├── models.py                # User / VoicePreset / TTSRecord / ASRRecord
-│   ├── schemas.py               # 请求响应模型
-│   ├── security.py              # PBKDF2 密码哈希 + JWT
-│   ├── deps.py                  # 鉴权依赖
-│   ├── errors.py                # 统一异常与错误响应
-│   ├── routers/
-│   │   ├── auth.py              # 注册 / 登录 / 微信扫码登录
-│   │   ├── tts.py               # 合成 / 历史 / 下载 / 删除
-│   │   ├── asr.py               # 上传识别 / 历史 / 源音频下载
-│   │   ├── voices.py            # 自定义音色增删改查
-│   │   ├── history.py           # 合并历史、统计、清空
-│   │   └── meta.py              # 能力开关与健康检查
-│   └── services/
-│       ├── speech_client.py     # 上游 HTTP 客户端（超时、重试、错误映射）
-│       ├── tts_service.py       # 合成请求组装与响应解析
-│       ├── asr_service.py       # 识别请求组装与响应解析
-│       └── storage.py           # 音频落盘 / 读取 / 删除
-│
+│   ├── main.py / config.py / db.py / models.py / schemas.py
+│   ├── security.py / deps.py / errors.py
+│   ├── routers/  auth · tts · asr · voices · history · meta
+│   └── services/ speech_client · tts_service · asr_service
+│                 storage · audio_dsp
 ├── static/
-│   ├── index.html               # 登录 / 注册
-│   ├── app.html                 # 工作台（首屏 + 四个视图）
-│   ├── oauth_callback.html      # 微信登录回调中转页
+│   ├── index.html          # 单页（含登录/注册遮罩）
+│   ├── oauth_callback.html
 │   ├── favicon.svg
-│   ├── css/style.css            # 设计系统
-│   └── js/
-│       ├── api.js               # 接口层（令牌、错误、提示、播放器渲染）
-│       ├── wave.js              # 声纹可视化（Web Audio 频谱驱动）
-│       ├── auth.js              # 登录注册
-│       ├── tts.js               # 文本转语音
-│       ├── voicedesign.js       # 音色设计
-│       ├── asr.js               # 音频转文字
-│       ├── records.js           # 我的记录
-│       └── app.js               # 外壳与路由
-│
-└── data/                        # 运行时生成（已 gitignore）
-    ├── app.db
-    ├── audio/{user_id}/         # 合成音频
-    └── uploads/{user_id}/       # 上传源音频
+│   ├── css/style.css       # 浅色默认 + data-theme="dark" 深色
+│   └── js/  wave.js · player.js · api.js · theme.js · workbench.js · main.js
+└── data/                   # 运行时生成（已 gitignore）
 ```
 
-## 4. 界面结构
-
-首屏为深色声纹带，集中呈现三项核心能力，点击进入对应视图：
-
-| 视图 | 说明 |
-| --- | --- |
-| 文本转语音 | 文本输入 + 音色选择（我的音色 / 预置音色分组）+ 格式，右侧即时试听与最近生成 |
-| 音色设计 | 描述音色 → 生成试听 → 命名保存；提供描述灵感标签与「我的音色」卡片墙 |
-| 音频转文字 | 拖拽上传 → 语种选择 → 识别结果复制 / 导出 |
-| 我的记录 | 「生成记录」与「我的音色」分栏；支持搜索、分页加载更多、试听、导出、删除、清空 |
-
-## 5. 数据库
+## 6. 数据库
 
 SQLite，首次启动自动建库建表；已存在的旧库会自动补齐新增字段（`ensure_columns`），无需手工迁移。
 
@@ -127,7 +105,7 @@ SQLite，首次启动自动建库建表；已存在的旧库会自动补齐新�
 
 换 PostgreSQL / MySQL 只改 `DATABASE_URL` 并安装驱动即可。
 
-## 6. 接口一览
+## 7. 接口一览
 
 除 `/api/meta`、`/api/health` 与鉴权接口外，**全部需要** `Authorization: Bearer <token>`。
 
@@ -149,7 +127,7 @@ SQLite，首次启动自动建库建表；已存在的旧库会自动补齐新�
 
 > `<audio src>` 无法自定义请求头，音频地址支持 `?token=xxx` 形式鉴权。
 
-## 7. 异常处理
+## 8. 异常处理
 
 统一结构，前端按 `code` 差异化提示：
 
@@ -176,12 +154,12 @@ SQLite，首次启动自动建库建表；已存在的旧库会自动补齐新�
 
 > 账户类问题（如余额不足）会以 `upstream_bad_request` 带上上游原文返回，便于快速定位。
 
-## 8. 模拟模式
+## 9. 模拟模式
 
 未配置密钥或 `MOCK_MODE=true` 时不请求上游：TTS 返回本地生成的 WAV 提示音，ASR 返回占位文本。
 整条链路（注册、上传、落盘、下载、记录、鉴权）无需密钥即可验证，页面顶部有模拟模式提示条。
 
-## 9. 常见问题
+## 10. 常见问题
 
 **端口占用？** `python run.py --port 9000`
 

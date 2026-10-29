@@ -112,6 +112,11 @@ class TTSRecord(Base):
     optimize_text: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     text_input: Mapped[str] = mapped_column(Text, nullable=False)
 
+    # 合成参数（上游不支持，由服务端后处理实现）
+    speed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pitch: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sample_rate: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     # 结果
     status: Mapped[str] = mapped_column(String(16), default="success", nullable=False)
     text_final: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -143,6 +148,9 @@ class TTSRecord(Base):
             "voice_preset_id": self.voice_preset_id,
             "audio_format": self.audio_format,
             "optimize_text": self.optimize_text,
+            "speed": self.speed,
+            "pitch": self.pitch,
+            "sample_rate": self.sample_rate,
             "text_input": self.text_input,
             "text_final": self.text_final,
             "status": self.status,
@@ -169,6 +177,9 @@ class ASRRecord(Base):
 
     model: Mapped[str] = mapped_column(String(64), nullable=False)
     language: Mapped[str] = mapped_column(String(16), default="auto", nullable=False)
+    # 输出选项：标点由上游自带；分段由服务端后处理实现
+    punctuate: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    segment: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
     file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
     file_mime: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -196,6 +207,8 @@ class ASRRecord(Base):
             "type": "asr",
             "model": self.model,
             "language": self.language,
+            "punctuate": self.punctuate,
+            "segment": self.segment,
             "filename": self.filename,
             "file_size": self.file_size,
             "file_mime": self.file_mime,

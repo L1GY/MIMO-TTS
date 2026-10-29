@@ -1,9 +1,9 @@
-/* 接口访问层：令牌管理、错误处理、提示与格式化。 */
+/* 接口层：令牌管理、错误处理、提示与格式化 */
 (function () {
   'use strict';
 
-  var TOKEN_KEY = 'va_token';
-  var USER_KEY = 'va_user';
+  var TOKEN_KEY = 'vl_token';
+  var USER_KEY = 'vl_user';
 
   var Api = {
     get token() { return localStorage.getItem(TOKEN_KEY) || ''; },
@@ -19,14 +19,7 @@
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
     },
-    redirectToLogin: function () {
-      Api.clearSession();
-      if (!/index\.html$/.test(location.pathname)) {
-        location.href = '/static/index.html';
-      }
-    },
-
-    /** 把令牌拼到 URL 上，供 <audio src> 等无法自定义请求头的场景使用。 */
+    /** <audio> 无法自定义请求头，这里用查询参数带令牌 */
     authed: function (url) {
       return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'token=' + encodeURIComponent(Api.token);
     },
@@ -50,7 +43,7 @@
       }
 
       if (resp.status === 401) {
-        Api.redirectToLogin();
+        Api.clearSession();
         throw new Error('登录状态已失效，请重新登录');
       }
 
@@ -74,11 +67,8 @@
 
     get: function (p) { return Api.request(p); },
     post: function (p, b) { return Api.request(p, { method: 'POST', body: b }); },
-    patch: function (p, b) { return Api.request(p, { method: 'PATCH', body: b }); },
     del: function (p) { return Api.request(p, { method: 'DELETE' }); }
   };
-
-  /* ------------------------------------------------------------ 提示条 */
 
   function toast(message, kind, ms) {
     var host = document.getElementById('toasts');
@@ -92,14 +82,10 @@
     el.textContent = message;
     host.appendChild(el);
     setTimeout(function () {
-      el.style.transition = 'opacity .2s ease, transform .2s ease';
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(6px)';
+      el.classList.add('is-out');
       setTimeout(function () { el.remove(); }, 220);
     }, ms || (kind === 'err' ? 5200 : 2800));
   }
-
-  /* ------------------------------------------------------------ 格式化 */
 
   function formatBytes(n) {
     if (n === null || n === undefined) return '—';
@@ -117,9 +103,11 @@
       ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
 
-  function formatSeconds(s) {
-    if (s === null || s === undefined) return '—';
-    return Number(s).toFixed(1) + ' 秒';
+  function formatClock(s) {
+    if (!isFinite(s) || s < 0) s = 0;
+    var m = Math.floor(s / 60);
+    var r = Math.floor(s % 60);
+    return m + ':' + (r < 10 ? '0' : '') + r;
   }
 
   function escapeHtml(s) {
@@ -145,30 +133,7 @@
   window.fmt = {
     bytes: formatBytes,
     dateTime: formatDateTime,
-    seconds: formatSeconds,
+    clock: formatClock,
     esc: escapeHtml
-  };
-
-  /* 生成/播放共用：把一段结果渲染成播放器，供多个视图复用 */
-  window.renderPlayer = function (host, opts) {
-    var url = Api.authed(opts.url);
-    var html =
-      '<div class="player"><audio controls src="' + url + '"></audio></div>' +
-      '<div class="row-end" style="margin-top:12px">' +
-        '<a class="btn btn-outline" href="' + url + '" download="' + (opts.filename || 'voice.wav') + '">下载音频</a>' +
-        (opts.text ? '<button class="btn btn-ghost" data-act="copy">复制文本</button>' : '') +
-      '</div>' +
-      '<div class="meta-row" style="margin-top:12px">' +
-        (opts.size ? '<span>' + fmt.bytes(opts.size) + '</span>' : '') +
-        (opts.latency ? '<span>' + opts.latency + ' ms</span>' : '') +
-        (opts.voiceName ? '<span class="badge badge-brand">' + fmt.esc(opts.voiceName) + '</span>' : '') +
-        (opts.isMock ? '<span class="badge badge-mock">模拟音频</span>' : '') +
-      '</div>';
-    host.innerHTML = html;
-
-    var btn = host.querySelector('[data-act="copy"]');
-    if (btn) btn.addEventListener('click', function () { copy(opts.text || ''); });
-
-    return host.querySelector('audio');
   };
 })();

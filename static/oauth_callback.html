@@ -1,16 +1,18 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>微信登录 · 声坊</title>
+<title>微信登录 · VoiceLab</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body style="display:grid;place-items:center;min-height:100vh;padding:24px">
-  <div class="card" style="max-width:380px;text-align:center">
-    <div id="slot"><span class="spinner dark" style="display:inline-block"></span></div>
-    <p id="msg" style="margin-top:12px;font-size:14px;color:var(--muted)">正在完成微信登录…</p>
+<body>
+  <div class="overlay is-open">
+    <div class="overlay-card" style="text-align:center">
+      <div id="slot"><span class="spinner" style="display:inline-block;border-color:var(--border-2);border-top-color:var(--primary)"></span></div>
+      <p class="sub" id="msg" style="margin-top:12px;margin-bottom:0">正在完成微信登录…</p>
+    </div>
   </div>
 
 <script src="/static/js/api.js"></script>
@@ -23,19 +25,19 @@
 
   if (token) {
     Api.setSession(token, {});
-    msg.textContent = '登录成功，正在进入工作台…';
+    msg.textContent = '登录成功，正在进入首页…';
     setTimeout(function () {
-      try { if (window.opener) window.opener.location.href = '/static/app.html'; } catch (e) {}
+      try { if (window.opener) window.opener.location.href = '/'; } catch (e) {}
       window.close();
-      location.href = '/static/app.html';
+      location.href = '/';
     }, 500);
   } else {
     var text = {
       wechat_cancelled: '你取消了微信授权',
       wechat_state_invalid: '登录请求已过期，请重新发起'
     }[error] || '微信登录未完成';
-    msg.textContent = text + '，正在返回登录页…';
-    setTimeout(function () { location.href = '/static/index.html'; }, 1400);
+    msg.textContent = text + '，正在返回首页…';
+    setTimeout(function () { location.href = '/'; }, 1400);
   }
 })();
 </script>

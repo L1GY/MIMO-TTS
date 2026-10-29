@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import logging
 import time
 from datetime import datetime, timezone
@@ -16,8 +17,8 @@ from ..db import get_db
 from ..deps import get_current_user
 from ..errors import AppError
 from ..models import TTSRecord, User, VoicePreset
-from ..schemas import TTSSynthesizeRequest
-from ..services import storage, tts_service
+from ..schemas import TTSPreviewRequest, TTSSynthesizeRequest
+from ..services import audio_dsp, storage, tts_service
 
 log = logging.getLogger("voice_atelier.tts_api")
 router = APIRouter(prefix="/api/tts", tags=["tts"])
@@ -63,6 +64,46 @@ def _resolve_voice(
     return settings.tts_model, settings.tts_default_voice, None, voice_display_name(settings.tts_default_voice)
 
 
+@router.post("/preview", summary="音色一键试听（不写入历史、不落盘）")
+async def preview(
+    body: TTSPreviewRequest,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """用一段固定短文本快速试听某个音色。
+
+    与正式合成的区别：不创建历史记录、不写音频文件，
+    直接以 data URL 返回，避免试听把「我的记录」冲垮。
+    """
+    started = time.perf_counter()
+    model, voice_id, voice_desc, voice_name = _resolve_voice(
+        db=db,
+        user_id=current.id,
+        model=None,
+        voice=body.voice,
+        voice_desc=body.voice_desc,
+        voice_preset_id=body.voice_preset_id,
+    )
+
+    result = await tts_service.synthesize(
+        text=body.text,
+        model=model,
+        voice=voice_id,
+        voice_desc=voice_desc,
+        audio_format=body.audio_format,
+    )
+
+    b64 = base64.b64encode(result["audio_bytes"]).decode("ascii")
+    return {
+        "audio_data_url": f"data:{result['mime']};base64,{b64}",
+        "mime": result["mime"],
+        "voice_name": voice_name,
+        "text": body.text,
+        "latency_ms": int((time.perf_counter() - started) * 1000),
+        "is_mock": result["is_mock"],
+    }
+
+
 @router.post("/synthesize", summary="文本转语音")
 async def synthesize(
     body: TTSSynthesizeRequest,
@@ -95,6 +136,9 @@ async def synthesize(
         audio_format=body.audio_format,
         optimize_text=body.optimize_text,
         text_input=body.text,
+        speed=body.speed,
+        pitch=body.pitch,
+        sample_rate=body.sample_rate,
         status="pending",
     )
     db.add(record)
@@ -110,6 +154,19 @@ async def synthesize(
             optimize_text=body.optimize_text,
             clone_sample_base64=body.clone_sample_base64,
         )
+
+        # 上游不支持语速/音调/采样率，这里对返回的 PCM 做后处理补上
+        effects: dict = {}
+        if result["ext"] == "wav" and (abs(body.speed - 1.0) > 1e-3
+                                       or abs(body.pitch) > 1e-6 or body.sample_rate):
+            result["audio_bytes"], effects = audio_dsp.apply_effects(
+                result["audio_bytes"],
+                speed=body.speed,
+                pitch=body.pitch,
+                sample_rate=body.sample_rate,
+            )
+            if effects.get("skipped"):
+                log.warning("音频后处理跳过：%s", effects["skipped"])
 
         path, size = storage.save_tts_audio(current.id, record.id, result["audio_bytes"], result["ext"])
         usage = result["usage"] or {}
@@ -147,6 +204,7 @@ async def synthesize(
             "latency_ms": latency,
             "usage": usage or None,
             "is_mock": result["is_mock"],
+            "effects": effects or None,     # 实际生效的语速/音调/采样率处理
         }
 
     except AppError as exc:

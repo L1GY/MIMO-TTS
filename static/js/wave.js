@@ -9,8 +9,8 @@
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.opts = opts || {};
-    this.color = this.opts.color || '#E8541B';
-    this.idleColor = this.opts.idleColor || '#CFC8B8';
+    this.color = this.opts.color || '#165DFF';
+    this.idleColor = this.opts.idleColor || '#CBD5E1';
     this.bars = this.opts.bars || 56;
     this.levels = new Array(this.bars).fill(0.08);
     this.targets = new Array(this.bars).fill(0.08);

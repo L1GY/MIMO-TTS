@@ -1,98 +1,389 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>登录 · 声坊</title>
+<title>VoiceLab 语音工具箱 · 文字 ↔ 语音 在线转换</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-<div class="auth-wrap">
-
-  <aside class="auth-brand">
-    <div class="brand">
+<!-- ============================ 顶部导航 ============================ -->
+<header class="site-header">
+  <div class="hdr-inner">
+    <div class="logo">
       <span class="mark">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 12h.5M9 7v10M15 3.5v17M21 9v6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 12h.5M9 6.5v11M15 3.5v17M21 9.5v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </span>
-      <span class="name">声坊<em>VOICE ATELIER</em></span>
+      <span>
+        <b>VoiceLab 语音工具箱</b>
+        <small>ASR 语音识别 / TTS 语音合成</small>
+      </span>
     </div>
 
-    <div class="pitch">
-      <h1>先有声音，<br>再有表达。</h1>
-      <p>合成、调音色、把语音转成文字——都在同一处完成，生成即可试听。</p>
-      <canvas class="wave wave-hero" id="brandWave" style="margin-top:26px"></canvas>
+    <nav class="site-nav">
+      <a href="#workbench">首页</a>
+      <a href="#api">API 文档</a>
+      <a href="#about">关于</a>
+    </nav>
+
+    <div class="hdr-right">
+      <button class="btn btn-ghost btn-icon" id="themeBtn" title="切换深色 / 浅色" aria-label="切换深色或浅色模式">
+        <svg id="iconSun" width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="3.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M10 1.6v2M10 16.4v2M1.6 10h2M16.4 10h2M4.1 4.1l1.4 1.4M14.5 14.5l1.4 1.4M15.9 4.1l-1.4 1.4M5.5 14.5l-1.4 1.4"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <svg id="iconMoon" width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="display:none">
+          <path d="M16.5 12.4A7 7 0 0 1 7.6 3.5a7.2 7.2 0 1 0 8.9 8.9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div id="authSlot"></div>
     </div>
+  </div>
+</header>
 
-    <div class="foot">登录后可立即开始</div>
-  </aside>
+<main>
+  <!-- ============================ 首屏 ============================ -->
+  <section class="hero wrap">
+    <h1>文字 <span class="swap">↔</span> 语音 在线转换</h1>
+    <p class="sub">TTS 文字转语音，ASR 语音转文字，支持试听、实时预览、导出音频 / 文本</p>
+    <p class="note">支持上传音频录音、文本输入，可选择音色、采样率，快速处理</p>
 
-  <main class="auth-panel">
-    <div class="auth-card">
-      <div class="navpills" role="tablist" style="margin-bottom:24px">
-        <button role="tab" id="tab-login" aria-selected="true" style="flex:1">登录</button>
-        <button role="tab" id="tab-register" aria-selected="false" style="flex:1">注册</button>
-      </div>
-
-      <div id="pane-login" role="tabpanel">
-        <h2>欢迎回来</h2>
-        <p class="sub">登录后继续使用你的音色与记录。</p>
-        <div id="loginAlert"></div>
-
-        <form id="loginForm" novalidate>
-          <label class="field">
-            <span class="label">用户名或邮箱</span>
-            <input type="text" name="username" autocomplete="username" placeholder="例如 alice" required>
-          </label>
-          <label class="field">
-            <span class="label">密码</span>
-            <input type="password" name="password" autocomplete="current-password" placeholder="至少 6 位" required>
-          </label>
-          <button class="btn btn-primary btn-lg btn-block" type="submit" id="loginBtn">登录</button>
-        </form>
-
-        <div class="divider" id="wxDivider" hidden>或</div>
-        <button class="wx-btn" id="wxBtn" hidden>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M9.2 3C5.1 3 1.8 5.8 1.8 9.2c0 2 1.1 3.7 2.9 4.9l-.7 2.2 2.5-1.3c.9.2 1.7.4 2.7.4h.6a5.6 5.6 0 0 1-.2-1.4c0-3.4 3.3-6 7.4-6h.6C17.1 5 13.5 3 9.2 3Z" fill="#2DC100"/>
-            <path d="M22.2 14.6c0-2.7-2.7-4.9-6-4.9s-6 2.2-6 4.9c0 2.7 2.7 4.9 6 4.9.7 0 1.4-.1 2.1-.3l2 1-.5-1.7c1.5-.9 2.4-2.2 2.4-3.9Z" fill="#2DC100"/>
+    <div class="mode-cards">
+      <button class="mode-card is-active" data-mode="tts" aria-pressed="true">
+        <span class="mc-ico">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M2 8v4M6.5 4v12M11 2v16M15.5 6v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
-          使用微信扫码登录
-        </button>
+        </span>
+        <b>TTS 文字转语音</b>
+        <span>输入文字，选音色与语速，合成后直接试听并导出 wav / mp3。</span>
+      </button>
+      <button class="mode-card" data-mode="asr" aria-pressed="false">
+        <span class="mc-ico">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="8" y="1.8" width="4.4" height="8.4" rx="2.2" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M4.4 9.4a5.6 5.6 0 0 0 11.2 0M10 15v3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <b>ASR 语音转文字</b>
+        <span>麦克风录音或上传音频，转成带标点的文字，可分段与导出。</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============================ 核心工作台 ============================ -->
+  <section class="workbench wrap" id="workbench">
+    <div class="wb-grid">
+
+      <!-- 左：输入区 -->
+      <div class="card">
+        <div class="card-hd">
+          <h2 id="inputTitle">文本输入</h2>
+          <button class="btn btn-sm btn-ghost" id="sampleBtn">填入示例文本</button>
+        </div>
+
+        <!-- TTS 面板 -->
+        <div id="pane-tts">
+          <textarea id="ttsText" placeholder="在此输入需要合成语音的文字，支持长文本"></textarea>
+          <div class="stat-row">
+            <span id="ttsChars">0 字</span>
+            <span id="ttsLimit">上限 2000 字</span>
+          </div>
+
+          <div class="opt-grid">
+            <label class="opt">
+              <span>音色</span>
+              <select id="ttsVoice"></select>
+            </label>
+            <label class="opt">
+              <span>输出格式</span>
+              <select id="ttsFormat">
+                <option value="wav">WAV</option>
+                <option value="mp3">MP3</option>
+              </select>
+            </label>
+            <label class="opt">
+              <span>语速</span>
+              <div class="slider-row">
+                <input type="range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1">
+                <span class="slider-val" id="ttsSpeedVal">1.0×</span>
+              </div>
+            </label>
+            <label class="opt">
+              <span>音调</span>
+              <div class="slider-row">
+                <input type="range" id="ttsPitch" min="-12" max="12" step="1" value="0">
+                <span class="slider-val" id="ttsPitchVal">0</span>
+              </div>
+            </label>
+            <label class="opt">
+              <span>采样率</span>
+              <select id="ttsRate">
+                <option value="">跟随上游（默认）</option>
+                <option value="16000">16000 Hz</option>
+                <option value="24000">24000 Hz</option>
+                <option value="44100">44100 Hz</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="inline-panel" id="designPanel" hidden>
+            <label class="field">
+              <span>音色描述</span>
+              <input type="text" id="vdDesc" placeholder="例如：温柔的成年女声，语速偏慢，适合有声书朗读">
+            </label>
+            <label class="field">
+              <span>音色名称</span>
+              <input type="text" id="vdName" placeholder="例如：深夜电台">
+            </label>
+            <div class="btn-row" style="margin-top:0">
+              <button class="btn btn-sm btn-outline" id="vdSave">保存为我的音色</button>
+              <button class="btn btn-sm btn-ghost" id="vdCancel">收起</button>
+            </div>
+          </div>
+
+          <div id="ttsAlert"></div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary btn-lg" id="ttsSubmit">开始合成</button>
+            <button class="btn btn-outline" id="ttsClear">清空文本</button>
+            <button class="btn btn-ghost" id="vdToggle">＋ 设计新音色</button>
+          </div>
+        </div>
+
+        <!-- ASR 面板 -->
+        <div id="pane-asr" hidden>
+          <div class="rec-block">
+            <button class="mic-btn" id="asrMic" aria-label="开始或停止录音">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <rect x="8" y="1.8" width="4.4" height="8.4" rx="2.2" stroke="currentColor" stroke-width="1.7"/>
+                <path d="M4.4 9.4a5.6 5.6 0 0 0 11.2 0M10 15v3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <canvas class="live-wave" id="asrLiveWave"></canvas>
+            <span class="rec-meta" id="recMeta">未录音</span>
+          </div>
+
+          <div class="drop" id="asrDrop" tabindex="0" role="button" aria-label="选择或拖入音频文件">
+            <div id="dropInner">
+              <div class="big">拖拽上传音频，或点击选择文件</div>
+              <div class="small">支持 mp3 / wav，不超过 <span id="asrMaxMb">7</span>MB</div>
+            </div>
+            <input type="file" id="asrFile" accept=".wav,.mp3,audio/wav,audio/mpeg" hidden>
+          </div>
+
+          <div class="opt-grid">
+            <label class="opt">
+              <span>识别语言</span>
+              <select id="asrLang">
+                <option value="auto">自动检测</option>
+                <option value="zh">中文</option>
+                <option value="en">英文</option>
+              </select>
+            </label>
+            <div class="opt">
+              <span>输出选项</span>
+              <div style="display:flex;gap:16px;padding-top:6px;flex-wrap:wrap">
+                <label class="opt-inline"><input type="checkbox" id="asrPunct" checked> 自动标点</label>
+                <label class="opt-inline"><input type="checkbox" id="asrSeg"> 分段输出</label>
+              </div>
+            </div>
+          </div>
+
+          <div id="asrAlert"></div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary btn-lg" id="asrSubmit" disabled>开始识别</button>
+            <button class="btn btn-outline" id="asrClear">清空</button>
+          </div>
+        </div>
       </div>
 
-      <div id="pane-register" role="tabpanel" hidden>
-        <h2>创建账号</h2>
-        <p class="sub">半分钟就好，马上生成第一段声音。</p>
-        <div id="regAlert"></div>
+      <!-- 右：输出 & 预览区 -->
+      <div class="card">
+        <div class="card-hd">
+          <h2>结果预览</h2>
+          <span id="outChip"></span>
+        </div>
 
-        <form id="regForm" novalidate>
-          <label class="field">
-            <span class="label">用户名</span>
-            <input type="text" name="username" autocomplete="username" placeholder="3-32 位字母、数字、_ . -" required>
-          </label>
-          <label class="field">
-            <span class="label">密码</span>
-            <input type="password" name="password" autocomplete="new-password" placeholder="至少 6 位" required>
-          </label>
-          <label class="field">
-            <span class="label">邮箱（可选，也可用于登录）</span>
-            <input type="email" name="email" autocomplete="email" placeholder="you@example.com">
-          </label>
-          <button class="btn btn-primary btn-lg btn-block" type="submit" id="regBtn">注册并登录</button>
-        </form>
+        <div class="status-line" id="statusLine">等待任务</div>
+
+        <textarea id="outText" readonly placeholder="处理完成后，结果文本会显示在这里"></textarea>
+        <div class="stat-row"><span id="outChars">0 字</span></div>
+
+        <canvas class="out-wave" id="outWave" style="margin-top:12px"></canvas>
+        <div id="outPlayer" style="margin-top:12px"></div>
+        <div class="stat-row" id="outDuration"></div>
+
+        <div class="btn-row">
+          <button class="btn btn-outline" id="dlAudio" disabled>下载音频</button>
+          <button class="btn btn-outline" id="copyOut" disabled>复制结果文本</button>
+        </div>
       </div>
     </div>
-  </main>
+  </section>
+
+  <!-- ============================ 特性 ============================ -->
+  <section class="section wrap" id="about">
+    <div class="section-hd">
+      <h2>功能特性</h2>
+      <p>合成与识别两套能力，覆盖从输入到导出的完整流程</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="fi">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M2 8v4M6.5 4v12M11 2v16M15.5 6v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <b>TTS 文字合成</b>
+        <p>多音色，长文本合成，可调节语速与音调，导出 wav / mp3。</p>
+      </div>
+      <div class="feat">
+        <div class="fi">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="8" y="1.8" width="4.4" height="8.4" rx="2.2" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M4.4 9.4a5.6 5.6 0 0 0 11.2 0M10 15v3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <b>ASR 语音识别</b>
+        <p>实时录音识别，上传音频转文字，自动加标点，支持分段输出。</p>
+      </div>
+      <div class="feat">
+        <div class="fi">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M10 5.6V10l3.2 2.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <b>历史与导出</b>
+        <p>每次任务都留档，可回放、导出音频或文本，随时清理。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ API 文档 ============================ -->
+  <section class="section wrap" id="api">
+    <div class="section-hd">
+      <h2>API 文档</h2>
+      <p>页面上的每一步操作都对应一个后端接口，可直接接入你自己的程序</p>
+    </div>
+    <div class="api-box">
+      <table>
+        <thead>
+          <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>POST</td><td><code>/api/auth/login</code></td><td>账号密码登录，返回 access_token</td></tr>
+          <tr><td>POST</td><td><code>/api/tts/synthesize</code></td><td>文本转语音：text / voice / speed / pitch / sample_rate</td></tr>
+          <tr><td>POST</td><td><code>/api/tts/preview</code></td><td>音色一键试听，不写入历史</td></tr>
+          <tr><td>POST</td><td><code>/api/asr/transcribe</code></td><td>上传音频转文字：multipart file / language / punctuate / segment</td></tr>
+          <tr><td>GET</td><td><code>/api/history</code></td><td>分页查询历史记录，支持 type 与 keyword</td></tr>
+          <tr><td>GET</td><td><code>/api/tts/{id}/download</code></td><td>下载生成的音频</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:14px;font-size:13px;color:var(--text-2)">
+        全部接口需要 <code>Authorization: Bearer &lt;token&gt;</code>；
+        完整交互文档见 <a href="/docs" style="color:var(--primary)">/docs</a>。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================ 历史记录 ============================ -->
+  <section class="section wrap" id="history">
+    <div class="section-hd">
+      <h2>历史记录</h2>
+      <p>最近的合成与识别任务都保存在服务端，可回放或导出</p>
+    </div>
+    <div class="hist-head">
+      <div class="seg" role="tablist">
+        <button role="tab" data-tab="all" aria-selected="true">全部</button>
+        <button role="tab" data-tab="tts" aria-selected="false">合成</button>
+        <button role="tab" data-tab="asr" aria-selected="false">识别</button>
+      </div>
+      <span style="flex:1"></span>
+      <button class="btn btn-sm btn-outline" id="histRefresh">刷新</button>
+      <button class="btn btn-sm btn-danger" id="histClear">清空</button>
+    </div>
+    <div id="histList"></div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-outline" id="histMore" hidden>加载更多</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer-inner">
+    <span>© 2026 VoiceLab 语音工具箱</span>
+    <span>基于上游语音大模型能力构建，仅供功能体验与技术验证</span>
+    <span class="footer-links">
+      <a href="#about">隐私说明</a>
+      <a href="#about">使用条款</a>
+    </span>
+  </div>
+</footer>
+
+<!-- ============================ 登录 / 注册遮罩 ============================ -->
+<div class="overlay" id="loginOverlay">
+  <div class="overlay-card">
+    <h3>登录 VoiceLab</h3>
+    <p class="sub">登录后即可使用合成与识别，并保留你的历史记录。</p>
+    <div id="loginAlert"></div>
+    <form id="loginForm" novalidate>
+      <label class="field">
+        <span>用户名或邮箱</span>
+        <input type="text" name="username" autocomplete="username" placeholder="例如 alice">
+      </label>
+      <label class="field">
+        <span>密码</span>
+        <input type="password" name="password" autocomplete="current-password" placeholder="至少 6 位">
+      </label>
+      <button class="btn btn-primary btn-block btn-lg" id="loginBtn" type="submit">登录</button>
+    </form>
+    <div style="margin-top:16px;text-align:center">
+      <button class="btn btn-ghost btn-sm" id="toRegBtn">还没有账号？注册</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="regOverlay">
+  <div class="overlay-card">
+    <h3>注册</h3>
+    <p class="sub">半分钟完成，注册后自动登录。</p>
+    <div id="regAlert"></div>
+    <form id="regForm" novalidate>
+      <label class="field">
+        <span>用户名</span>
+        <input type="text" name="username" autocomplete="username" placeholder="3-32 位字母、数字、_ . -">
+      </label>
+      <label class="field">
+        <span>密码</span>
+        <input type="password" name="password" autocomplete="new-password" placeholder="至少 6 位">
+      </label>
+      <label class="field">
+        <span>邮箱（可选）</span>
+        <input type="email" name="email" autocomplete="email" placeholder="you@example.com">
+      </label>
+      <button class="btn btn-primary btn-block btn-lg" id="regBtn" type="submit">注册并登录</button>
+    </form>
+    <div style="margin-top:16px;text-align:center">
+      <button class="btn btn-ghost btn-sm" id="toLoginBtn">已有账号？登录</button>
+    </div>
+  </div>
 </div>
 
 <div id="toasts"></div>
 
-<script src="/static/js/api.js"></script>
 <script src="/static/js/wave.js"></script>
-<script src="/static/js/auth.js"></script>
+<script src="/static/js/player.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/theme.js"></script>
+<script src="/static/js/workbench.js"></script>
+<script src="/static/js/main.js"></script>
 </body>
 </html>
