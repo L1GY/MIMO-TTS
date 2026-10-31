@@ -1,0 +1,103 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}系统配置 · 管理后台{% endblock %}
+{% block admin_desc %}MiMo 密钥、额度策略与内容安全{% endblock %}
+
+{% block admin %}
+<div class="grid gap-4 lg:grid-cols-3">
+
+  <form method="post" action="/admin/settings" class="lg:col-span-2 space-y-4">
+
+    <!-- API -->
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-1 flex items-center gap-2 text-[14px] font-semibold">
+        <i class="fa-solid fa-key text-brand-500"></i> MiMo API
+        {% if api_ready %}
+        <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">已配置</span>
+        {% else %}
+        <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10.5px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">未配置</span>
+        {% endif %}
+      </h2>
+      <p class="mb-3 text-[11.5px] text-slate-400">密钥只保存在服务端数据库，不会出现在任何页面源码或接口响应里。</p>
+
+      <label class="mb-1.5 block text-[12.5px] font-medium text-slate-600 dark:text-slate-300">API Key</label>
+      <input type="password" name="api_key" autocomplete="new-password"
+             placeholder="{{ api_key_masked or '粘贴你的 MiMo API Key（留空则不修改）' }}"
+             class="w-full rounded-lg border-slate-300 bg-white py-2 font-mono text-[12.5px] placeholder:font-sans placeholder:text-slate-400 focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950">
+      <p class="mt-1.5 text-[11px] text-slate-400">
+        当前：<span class="font-mono">{{ api_key_masked or '（空）' }}</span> · 留空保存则保持原值不变
+      </p>
+
+      <div class="mt-4 grid gap-2 rounded-lg bg-slate-50 p-3 text-[11.5px] text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+        <div class="flex justify-between gap-3"><span>接口地址</span><span class="truncate font-mono text-slate-600 dark:text-slate-300">{{ models.base }}/chat/completions</span></div>
+        <div class="flex justify-between gap-3"><span>预置音色模型</span><span class="font-mono text-slate-600 dark:text-slate-300">{{ models.tts }}</span></div>
+        <div class="flex justify-between gap-3"><span>克隆音色模型</span><span class="font-mono text-slate-600 dark:text-slate-300">{{ models.clone }}</span></div>
+      </div>
+    </section>
+
+    <!-- 业务规则 -->
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 flex items-center gap-2 text-[14px] font-semibold"><i class="fa-solid fa-sliders text-brand-500"></i> 业务规则</h2>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label class="mb-1.5 block text-[12.5px] font-medium text-slate-600 dark:text-slate-300">新用户默认额度（字）</label>
+          <input type="number" name="default_quota" value="{{ default_quota }}" min="0" step="1000"
+                 class="w-full rounded-lg border-slate-300 bg-white py-2 text-[13px] focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950">
+        </div>
+        <div>
+          <label class="mb-1.5 block text-[12.5px] font-medium text-slate-600 dark:text-slate-300">单条文本上限（字）</label>
+          <input type="number" name="max_text_len" value="{{ max_text_len }}" min="50" step="100"
+                 class="w-full rounded-lg border-slate-300 bg-white py-2 text-[13px] focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950">
+        </div>
+      </div>
+      <p class="mt-2 text-[11px] text-slate-400">修改后对新提交的任务立即生效；长文本会按 280 字左右自动分段。</p>
+    </section>
+
+    <!-- 内容安全 -->
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 flex items-center gap-2 text-[14px] font-semibold"><i class="fa-solid fa-filter text-brand-500"></i> 内容安全</h2>
+      <label class="mb-1.5 block text-[12.5px] font-medium text-slate-600 dark:text-slate-300">敏感词（每行一个，命中后会替换为 *）</label>
+      <textarea name="sensitive_words" rows="5"
+                class="w-full rounded-lg border-slate-300 bg-white p-2.5 font-mono text-[12px] leading-relaxed focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950">{{ sensitive_words }}</textarea>
+
+      <label class="mb-1.5 mt-3 block text-[12.5px] font-medium text-slate-600 dark:text-slate-300">站点公告（显示在合成页顶部）</label>
+      <textarea name="announcement" rows="2" placeholder="留空则不显示"
+                class="w-full rounded-lg border-slate-300 bg-white p-2.5 text-[12.5px] focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950">{{ announcement }}</textarea>
+    </section>
+
+    <div class="flex items-center gap-2">
+      <button type="submit" class="rounded-lg bg-brand-600 px-5 py-2.5 text-[13px] font-semibold text-white shadow-soft transition hover:bg-brand-700">
+        保存配置
+      </button>
+      <span class="text-[11.5px] text-slate-400">保存后立即生效，无需重启服务</span>
+    </div>
+  </form>
+
+  <!-- 侧栏说明 -->
+  <aside class="space-y-4">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-2 text-[13.5px] font-semibold">如何获取 API Key</h2>
+      <ol class="space-y-1.5 text-[11.5px] leading-relaxed text-slate-500 dark:text-slate-400">
+        <li>1. 登录小米 MiMo 开放平台控制台</li>
+        <li>2. 在「API 密钥」页面创建 Key</li>
+        <li>3. 粘贴到左侧输入框并保存</li>
+        <li>4. 回到合成页确认顶部显示「MiMo API 已就绪」</li>
+      </ol>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-2 text-[13.5px] font-semibold">添加更多公共音色</h2>
+      <p class="text-[11.5px] leading-relaxed text-slate-500 dark:text-slate-400">
+        编辑 <code class="rounded bg-slate-100 px-1 font-mono text-[10.5px] dark:bg-slate-800">config.py</code>
+        中的 <code class="rounded bg-slate-100 px-1 font-mono text-[10.5px] dark:bg-slate-800">PUBLIC_VOICES</code>，
+        增加 <code class="rounded bg-slate-100 px-1 font-mono text-[10.5px] dark:bg-slate-800">voice_key</code>
+        为官方音色标识的条目，重启服务后自动写入数据库。
+      </p>
+    </div>
+
+    <div class="rounded-xl border border-amber-200 bg-amber-50 p-5 text-[11.5px] leading-relaxed text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+      <i class="fa-solid fa-shield-halved mr-1"></i>
+      建议定期轮换 API Key；一旦密钥可能泄漏，请先在控制台删除旧 Key，再到此处更新。
+    </div>
+  </aside>
+</div>
+{% endblock %}

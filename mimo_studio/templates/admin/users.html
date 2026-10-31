@@ -1,0 +1,91 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}用户管理 · 管理后台{% endblock %}
+{% block admin_desc %}启用/禁用账号、调整额度{% endblock %}
+
+{% block admin %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+  <form method="get" action="/admin/users" class="relative">
+    <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-slate-400"></i>
+    <input type="text" name="q" value="{{ q }}" placeholder="搜索用户名"
+           class="w-56 rounded-lg border-slate-300 bg-white py-2 pl-8 pr-3 text-[12.5px] focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-900">
+  </form>
+  <p class="text-[12px] text-slate-400">共 {{ items|length }} 个用户</p>
+</div>
+
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-[12.5px]">
+      <thead class="bg-slate-50 text-[11.5px] text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+        <tr>
+          <th class="px-4 py-2.5 font-medium">用户</th>
+          <th class="px-4 py-2.5 font-medium">角色 / 状态</th>
+          <th class="px-4 py-2.5 font-medium">额度（已用 / 总额）</th>
+          <th class="px-4 py-2.5 font-medium">任务</th>
+          <th class="px-4 py-2.5 font-medium">注册时间</th>
+          <th class="px-4 py-2.5 font-medium text-right">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for u in items %}
+        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2.5">
+              <span class="grid h-8 w-8 place-items-center rounded-full bg-brand-100 text-[12px] font-bold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">{{ u.initial }}</span>
+              <div class="min-w-0">
+                <p class="truncate font-semibold">{{ u.username }}</p>
+                <p class="truncate text-[11px] text-slate-400">{{ u.email or '无邮箱' }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3">
+            {% if u.is_admin %}
+              <span class="rounded-md bg-amber-50 px-2 py-0.5 text-[10.5px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">管理员</span>
+            {% else %}
+              <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[10.5px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">普通用户</span>
+            {% endif %}
+            {% if u.is_active %}
+              <span class="ml-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10.5px] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">正常</span>
+            {% else %}
+              <span class="ml-1 rounded-md bg-rose-50 px-2 py-0.5 text-[10.5px] text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">已禁用</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <span class="tabular-nums text-slate-500 dark:text-slate-400">{{ u.used_chars }} / {{ u.quota_chars }}</span>
+            <div class="mt-1 h-1 w-24 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div class="h-full rounded-full bg-brand-500" style="width: {{ (u.used_chars / u.quota_chars * 100) if u.quota_chars else 0 }}%"></div>
+            </div>
+          </td>
+          <td class="px-4 py-3 tabular-nums text-slate-500 dark:text-slate-400">{{ counts.get(u.id, 0) }}</td>
+          <td class="px-4 py-3 text-slate-400">{{ u.created_at|dt('%Y-%m-%d') }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center justify-end gap-1.5">
+              <form method="post" action="/admin/users/{{ u.id }}/quota" class="flex items-center gap-1">
+                <input type="number" name="quota_chars" value="{{ u.quota_chars }}" min="0" step="1000"
+                       class="w-20 rounded-md border-slate-200 bg-slate-50 px-1.5 py-1 text-[11px] focus:border-brand-500 focus:ring-0 dark:border-slate-700 dark:bg-slate-950">
+                <label class="flex items-center gap-1 text-[10.5px] text-slate-500 dark:text-slate-400" title="同时把已用额度清零">
+                  <input type="checkbox" name="reset_used" value="1" class="h-3 w-3 rounded border-slate-300 text-brand-600">
+                  重置
+                </label>
+                <button type="submit" class="rounded-md bg-slate-900 px-2 py-1 text-[10.5px] font-medium text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900">保存</button>
+              </form>
+
+              {% if not u.is_admin and u.id != user.id %}
+              <form method="post" action="/admin/users/{{ u.id }}/toggle"
+                    data-confirm="确认{{ '禁用' if u.is_active else '启用' }}用户「{{ u.username }}」？">
+                <button type="submit"
+                        class="rounded-md border px-2 py-1 text-[10.5px] font-medium transition
+                               {% if u.is_active %}border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:hover:bg-rose-500/10
+                               {% else %}border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-500/30 dark:hover:bg-emerald-500/10{% endif %}">
+                  {{ '禁用' if u.is_active else '启用' }}
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

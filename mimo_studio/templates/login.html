@@ -1,0 +1,48 @@
+{% extends "base_auth.html" %}
+{% block title %}登录 · {{ APP_NAME }}{% endblock %}
+
+{% block card %}
+<h2 class="text-[17px] font-bold">登录账号</h2>
+<p class="mt-1 text-[12.5px] text-slate-500 dark:text-slate-400">使用用户名和密码登录，继续使用语音合成</p>
+
+<form method="post" action="/login" class="mt-6 space-y-4" id="loginForm">
+  <input type="hidden" name="next_path" value="{{ next_path or '/' }}">
+
+  <div>
+    <label class="mb-1.5 block text-[12.5px] font-medium text-slate-600 dark:text-slate-300">用户名</label>
+    <div class="relative">
+      <i class="fa-regular fa-user pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-slate-400"></i>
+      <input type="text" name="username" required autocomplete="username" autofocus
+             placeholder="请输入用户名"
+             class="w-full rounded-lg border-slate-300 bg-white py-2.5 pl-9 pr-3 text-[13.5px] placeholder:text-slate-400 focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950">
+    </div>
+  </div>
+
+  <div>
+    <label class="mb-1.5 block text-[12.5px] font-medium text-slate-600 dark:text-slate-300">密码</label>
+    <div class="relative">
+      <i class="fa-solid fa-lock pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-slate-400"></i>
+      <input type="password" name="password" required autocomplete="current-password"
+             placeholder="请输入密码"
+             class="w-full rounded-lg border-slate-300 bg-white py-2.5 pl-9 pr-10 text-[13.5px] placeholder:text-slate-400 focus:border-brand-500 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950">
+      <button type="button" class="js-toggle-pw absolute right-2.5 top-1/2 -translate-y-1/2 px-1 text-[12.5px] text-slate-400 hover:text-slate-600">
+        <i class="fa-regular fa-eye"></i>
+      </button>
+    </div>
+  </div>
+
+  <button type="submit"
+          class="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 py-2.5 text-[14px] font-semibold text-white shadow-soft transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60">
+    <span>登录</span>
+  </button>
+</form>
+
+<p class="mt-5 text-center text-[12.5px] text-slate-500 dark:text-slate-400">
+  还没有账号？<a href="/register" class="font-semibold text-brand-600 hover:underline dark:text-brand-400">立即注册</a>
+</p>
+
+<div class="mt-5 rounded-lg bg-slate-50 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+  <i class="fa-solid fa-circle-info mr-1 text-slate-400"></i>
+  首次运行会生成默认管理员 <code class="rounded bg-white px-1 py-0.5 font-mono text-[11px] text-slate-700 dark:bg-slate-900 dark:text-slate-300">admin / admin123</code>，登录后请及时修改密码。
+</div>
+{% endblock %}

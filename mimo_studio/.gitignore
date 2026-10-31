@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.env
+mimo.db
+mimo.db-wal
+mimo.db-shm
+static/audio/samples/*
+static/audio/outputs/*
+!static/audio/samples/.gitkeep
+!static/audio/outputs/.gitkeep

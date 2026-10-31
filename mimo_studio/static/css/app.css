@@ -1,0 +1,131 @@
+/* ==========================================================================
+   MiMo 声音工坊 —— 自定义样式（Tailwind 之外的少量补充）
+   ========================================================================== */
+
+/* 横向滚动条隐藏（顶部导航用） */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 细滚动条 */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1; border-radius: 99px;
+  border: 3px solid transparent; background-clip: content-box;
+}
+.dark *::-webkit-scrollbar-thumb { background: #475569; background-clip: content-box; }
+
+/* ------------------------------ 音色卡选中态 ------------------------------ */
+.voice-card { position: relative; }
+.voice-card.is-selected {
+  border-color: #6366f1;
+  background: #eef2ff;
+  box-shadow: 0 0 0 1px #6366f1 inset;
+}
+.dark .voice-card.is-selected {
+  border-color: #818cf8;
+  background: rgba(99, 102, 241, .14);
+  box-shadow: 0 0 0 1px #818cf8 inset;
+}
+.voice-card .js-check { display: none; }
+.voice-card.is-selected .js-check { display: block; }
+
+/* ------------------------------ 音频播放器 ------------------------------ */
+.tp {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0; border-radius: 12px;
+  background: #f8fafc;
+}
+.dark .tp { border-color: #1e293b; background: #0f172a; }
+
+.tp-btn {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #4f46e5; color: #fff; border: 0; cursor: pointer;
+  transition: background-color .18s ease, transform .18s ease;
+}
+.tp-btn:hover { background: #4338ca; }
+.tp-btn:active { transform: scale(.94); }
+.tp-btn.is-loading { opacity: .7; }
+
+.tp-track {
+  position: relative; flex: 1; height: 6px; min-width: 60px;
+  background: #e2e8f0; border-radius: 99px; cursor: pointer;
+}
+.dark .tp-track { background: #1e293b; }
+.tp-track::before { content: ""; position: absolute; inset: -9px 0; }
+
+.tp-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+  border-radius: 99px; background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width .08s linear;
+}
+.tp-knob {
+  position: absolute; top: 50%; left: 0; width: 12px; height: 12px;
+  margin: -6px 0 0 -6px; border-radius: 50%;
+  background: #fff; border: 2px solid #6366f1;
+  transform: scale(.7); opacity: 0;
+  transition: transform .18s ease, opacity .18s ease;
+}
+.tp-track:hover .tp-knob, .tp.is-playing .tp-knob { transform: scale(1); opacity: 1; }
+
+.tp-time {
+  flex: none; font-size: 11.5px; color: #64748b;
+  font-variant-numeric: tabular-nums; min-width: 78px; text-align: right;
+}
+.dark .tp-time { color: #94a3b8; }
+
+.tp-vol-btn {
+  flex: none; width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center; border: 0; background: transparent;
+  color: #64748b; cursor: pointer;
+}
+.tp-vol-btn:hover { background: #eef2ff; color: #4f46e5; }
+.dark .tp-vol-btn { color: #94a3b8; }
+.dark .tp-vol-btn:hover { background: #1e293b; color: #a5b4fc; }
+
+.tp-volume {
+  width: 64px; height: 4px; flex: none; cursor: pointer;
+  accent-color: #6366f1; background: transparent;
+}
+
+/* 紧凑模式：在列表里省空间 */
+.player-compact .tp { padding: 6px 10px; }
+.player-compact .tp-btn { width: 28px; height: 28px; font-size: 11px; }
+.player-compact .tp-time { min-width: 72px; font-size: 11px; }
+.player-compact .tp-volume { width: 48px; }
+
+@media (max-width: 640px) {
+  .tp-volume, .tp-vol-btn { display: none; }
+}
+
+/* Toast 动画 */
+#toastHost > div {
+  animation: toast-in .2s cubic-bezier(.4, 0, .2, 1);
+  transform-origin: right bottom;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+#toastHost > div.is-out { opacity: 0; transform: translateY(8px); transition: all .2s ease; }
+
+/* 选中文本 */
+::selection { background: #c7d2fe; color: #1e1b4b; }
+.dark ::selection { background: #4338ca; color: #eef2ff; }
+
+/* 拖拽上传高亮 */
+.drop-active {
+  border-color: #6366f1 !important;
+  background: #eef2ff !important;
+}
+.dark .drop-active { background: rgba(99, 102, 241, .14) !important; }
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}

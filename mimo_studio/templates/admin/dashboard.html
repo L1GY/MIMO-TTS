@@ -1,0 +1,94 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}概览 · 管理后台{% endblock %}
+{% block admin_desc %}平台整体运行状况{% endblock %}
+
+{% block admin %}
+{% if not api_ready %}
+<div class="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12.5px] text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+  <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+  <span>还没有配置 MiMo API Key，用户暂时无法合成。请到 <a href="/admin/settings" class="font-semibold underline">系统配置</a> 填写。</span>
+</div>
+{% endif %}
+
+<!-- 指标卡 -->
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  {% set cards = [
+    ('用户总数', stats.total_users, 'fa-users', 'text-brand-600 bg-brand-50 dark:bg-brand-500/15 dark:text-brand-300', '活跃 ' ~ stats.active_users),
+    ('合成任务', stats.total_tasks, 'fa-wand-magic-sparkles', 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-300', '今日 ' ~ stats.today_tasks),
+    ('克隆音色', stats.clone_voices, 'fa-layer-group', 'text-violet-600 bg-violet-50 dark:bg-violet-500/15 dark:text-violet-300', '全平台'),
+    ('成功率', stats.success_rate ~ '%', 'fa-chart-line', 'text-amber-600 bg-amber-50 dark:bg-amber-500/15 dark:text-amber-300', '失败 ' ~ stats.fail_tasks ~ ' 次')
+  ] %}
+  {% for label, value, icon, cls, hint in cards %}
+  <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex items-start justify-between">
+      <p class="text-[12px] text-slate-500 dark:text-slate-400">{{ label }}</p>
+      <span class="grid h-7 w-7 place-items-center rounded-lg {{ cls }}"><i class="fa-solid {{ icon }} text-[11px]"></i></span>
+    </div>
+    <p class="mt-2 text-[22px] font-bold leading-none tabular-nums">{{ value }}</p>
+    <p class="mt-1.5 text-[11px] text-slate-400">{{ hint }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="mt-4 grid gap-4 lg:grid-cols-3">
+
+  <!-- 近 7 天 -->
+  <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-soft lg:col-span-2 dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="text-[14px] font-semibold">近 7 天合成量</h2>
+      <span class="text-[11.5px] text-slate-400">本周 {{ stats.week_tasks }} 次 · 处理中 {{ stats.running }}</span>
+    </div>
+    <div class="flex items-end gap-2" style="height: 132px">
+      {% for d in daily %}
+      <div class="flex flex-1 flex-col items-center justify-end gap-1.5 self-stretch">
+        <span class="text-[10px] font-medium tabular-nums text-slate-400">{{ d.count or '' }}</span>
+        <div class="mx-auto w-full max-w-[26px] rounded-t-md bg-gradient-to-t from-brand-500 to-brand-400 transition-all"
+             style="height: {{ (d.count / max_daily * 76)|round|int }}px; min-height: 3px"
+             title="{{ d.label }}：{{ d.count }} 次"></div>
+        <span class="text-[10px] text-slate-400">{{ d.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 累计 -->
+  <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-3 text-[14px] font-semibold">累计消耗</h2>
+    <p class="text-[26px] font-bold tabular-nums">{{ stats.chars }}<span class="ml-1 text-[12px] font-normal text-slate-400">字</span></p>
+    <p class="mt-1 text-[11.5px] text-slate-400">所有任务的合成文本总字数</p>
+    <div class="mt-4 space-y-2 border-t border-slate-100 pt-3 text-[12px] dark:border-slate-800">
+      <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">成功任务</span><span class="font-semibold text-emerald-600 dark:text-emerald-400">{{ stats.ok_tasks }}</span></div>
+      <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">失败任务</span><span class="font-semibold text-rose-600 dark:text-rose-400">{{ stats.fail_tasks }}</span></div>
+      <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">排队/进行中</span><span class="font-semibold">{{ stats.running }}</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 最近任务 -->
+<div class="mt-4 rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+  <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+    <h2 class="text-[14px] font-semibold">最近任务</h2>
+    <a href="/admin/tasks" class="text-[12px] font-medium text-brand-600 hover:underline dark:text-brand-400">查看全部 →</a>
+  </div>
+  {% if recent %}
+  <div class="divide-y divide-slate-100 dark:divide-slate-800">
+    {% for t in recent %}
+    <div class="flex items-center gap-3 px-5 py-3 text-[12.5px]">
+      <span class="w-16 shrink-0 text-slate-400">{{ t.created_at|short }}</span>
+      <span class="min-w-0 flex-1 truncate">{{ t.text_brief }}</span>
+      <span class="hidden shrink-0 text-slate-400 sm:block">{{ t.voice_name }}</span>
+      {% if t.status == 'success' %}
+        <span class="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">成功</span>
+      {% elif t.status == 'failed' %}
+        <span class="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10.5px] text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">失败</span>
+      {% else %}
+        <span class="shrink-0 rounded-full bg-sky-50 px-2 py-0.5 text-[10.5px] text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">{{ t.status_text }}</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="px-5 py-10 text-center text-[12.5px] text-slate-400">还没有任务</p>
+  {% endif %}
+</div>
+{% endblock %}

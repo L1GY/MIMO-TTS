@@ -1,0 +1,72 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}合成任务 · 管理后台{% endblock %}
+{% block admin_desc %}全平台任务与失败详情{% endblock %}
+
+{% block admin %}
+<div class="mb-4 flex flex-wrap items-center gap-1.5">
+  {% set tabs = [('all','全部'),('queued','排队中'),('running','生成中'),('success','成功'),('failed','失败')] %}
+  {% for key, label in tabs %}
+  <a href="/admin/tasks?status={{ key }}"
+     class="rounded-lg px-3 py-1.5 text-[12px] font-medium transition
+            {% if status == key %}bg-slate-900 text-white dark:bg-white dark:text-slate-900
+            {% else %}border border-slate-200 bg-white text-slate-600 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+  <span class="ml-auto text-[12px] text-slate-400">共 {{ total }} 条</span>
+</div>
+
+<div class="space-y-2.5">
+  {% for t in items %}
+  <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex flex-wrap items-start justify-between gap-2">
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2 text-[11px]">
+          {% if t.status == 'success' %}
+            <span class="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">成功</span>
+          {% elif t.status == 'failed' %}
+            <span class="rounded-full bg-rose-50 px-2 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">失败</span>
+          {% else %}
+            <span class="rounded-full bg-sky-50 px-2 py-0.5 font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">{{ t.status_text }} {{ t.progress }}%</span>
+          {% endif %}
+          <span class="text-slate-500 dark:text-slate-400">@{{ usernames.get(t.user_id, '已注销') }}</span>
+          <span class="text-slate-400">{{ t.created_at|dt }}</span>
+          <span class="text-slate-400">音色 {{ t.voice_name }}{% if t.voice_kind == 'clone' %}（克隆）{% endif %}</span>
+          <span class="text-slate-400">{{ t.text_len }} 字 · {{ '%.1f'|format(t.speed) }}×</span>
+        </div>
+        <p class="mt-1.5 line-clamp-2 text-[12.5px] text-slate-700 dark:text-slate-300">{{ t.text }}</p>
+
+        {% if t.status == 'failed' and t.error %}
+        <p class="mt-2 rounded-lg bg-rose-50 px-3 py-1.5 text-[11.5px] leading-relaxed text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+          <i class="fa-solid fa-circle-exclamation mr-1"></i>{{ t.error }}
+        </p>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-2 text-[11px] text-slate-400">
+        {% if t.status == 'success' %}
+        <span>{{ t.duration_text }} · {{ t.size_text }}</span>
+        <a href="/records/{{ t.id }}/download" class="rounded-md border border-slate-200 px-2 py-1 text-slate-600 hover:border-brand-300 hover:text-brand-700 dark:border-slate-700 dark:text-slate-300">
+          <i class="fa-solid fa-download"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not items %}
+  <p class="rounded-xl border border-dashed border-slate-300 py-16 text-center text-[12.5px] text-slate-400 dark:border-slate-700">没有符合条件的任务</p>
+  {% endif %}
+</div>
+
+{% if pages > 1 %}
+<div class="mt-5 flex items-center justify-center gap-1.5">
+  {% for p in range(1, pages + 1) %}
+  <a href="/admin/tasks?status={{ status }}&page={{ p }}"
+     class="rounded-lg px-3 py-1.5 text-[12px] font-medium transition
+            {% if p == page %}bg-brand-600 text-white{% else %}border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300{% endif %}">{{ p }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
