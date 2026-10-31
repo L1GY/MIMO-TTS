@@ -1,0 +1,35 @@
+# 依赖与缓存
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.workbuddy
+# 本地配置：密钥绝对不能进镜像，运行时用 --env-file / compose 注入
+.env
+.env.local
+*.pem
+*.key
+
+# 运行时数据：数据库和音频都在卷里，不打进镜像
+mimo.db
+mimo.db-wal
+mimo.db-shm
+static/audio/samples/*
+static/audio/outputs/*
+!static/audio/samples/.gitkeep
+!static/audio/outputs/.gitkeep
+
+# 版本控制与编辑器
+.git/
+.gitignore
+.vscode/
+.idea/
+*.log
+
+# 构建产物与文档（不参与运行）
+Dockerfile
+docker-compose.yml
+.dockerignore
+README.md

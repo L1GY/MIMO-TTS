@@ -29,6 +29,25 @@ python main.py
 
 首次启动会自动完成：建库建表（`mimo.db`）、创建默认管理员、写入 9 个官方预置音色、创建 `static/audio/{samples,outputs}` 目录。
 
+### 用 Docker 启动
+
+```bash
+# 方式一：compose（推荐，卷与环境变量都配好了）
+docker compose up -d --build
+
+# 方式二：手动
+docker build -t mimo-studio .
+docker run -d --name mimo-studio -p 8100:8100 \
+  --env-file .env \
+  -v mimo-data:/data \
+  -v mimo-audio:/app/static/audio \
+  mimo-studio
+```
+
+两个卷必须挂载：`/data` 放数据库，`/app/static/audio` 放音色样本与合成音频——后者是代码里 `STATIC_DIR` 决定的固定路径，换成别处静态文件会 404。
+
+镜像不含 `.env`（已被 `.dockerignore` 排除），密钥通过 `--env-file` 或环境变量注入；`SECRET_KEY` 建议固定写入 `.env`，否则每次重启所有登录态失效。容器内是单 worker 运行，不要加 `--workers`（任务队列是进程内线程池 + 数据库轮询，多进程会重复执行同一任务）。
+
 ---
 
 ## 二、API Key 配置位置（三种方式，后者优先）
@@ -130,6 +149,9 @@ mimo_studio/
 ├── database.py              # SQLite 连接、ORM 初始化、建表
 ├── requirements.txt
 ├── .env.example             # 配置模板
+├── Dockerfile               # 镜像构建（非 root、含健康检查）
+├── docker-compose.yml       # 一键启动（已配好卷与环境变量）
+├── .dockerignore            # 排除 .env / 数据库 / 音频，避免密钥进镜像
 ├── models/                  # SQLAlchemy 模型
 │   ├── user.py              # 用户（bcrypt 密码、角色、额度）
 │   ├── voice.py             # 音色（preset / clone）

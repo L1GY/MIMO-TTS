@@ -1,0 +1,40 @@
+# 一键启动：docker compose up -d --build
+#
+# 需要同目录下有 .env（可直接复制 .env.example 后填 API Key）。
+# 不填也能启动，登录后台 → 系统配置里填 Key 即可。
+services:
+  mimo-studio:
+    build: .
+    image: mimo-studio:latest
+    container_name: mimo-studio
+    restart: unless-stopped
+    ports:
+      - "8100:8100"
+
+    # 从 .env 读 MIMO_API_KEY / SECRET_KEY / 额度等配置
+    env_file:
+      - .env
+
+    environment:
+      # .env 里是本地开发用的 127.0.0.1，容器内必须监听 0.0.0.0，
+      # environment 优先级高于 env_file，这里显式覆盖。
+      HOST: 0.0.0.0
+      PORT: "8100"
+      DB_PATH: /data/mimo.db
+
+    volumes:
+      # 数据库
+      - mimo-data:/data
+      # 音色样本 + 合成音频（路径由代码里的 STATIC_DIR 决定，不能改）
+      - mimo-audio:/app/static/audio
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8100/healthz',timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  mimo-data:
+  mimo-audio:

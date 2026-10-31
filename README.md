@@ -13,6 +13,8 @@ pip install -r requirements.txt
 python main.py           # http://127.0.0.1:8100
 ```
 
+或用 Docker：`cd mimo_studio && docker compose up -d --build`（等价于 `docker build -t mimo-studio .`）。
+
 首次运行自动建库建表、生成默认管理员 `admin` / `admin123`、写入 9 个预置音色。
 
 ## 配置 API Key
