@@ -5,6 +5,7 @@ __pycache__/
 venv/
 env/
 .shots/
+.workbuddy/
 # 本地配置与密钥
 .env
 
